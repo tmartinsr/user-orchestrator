@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:cxf="http://camel.apache.org/schema/cxf"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="             http://www.springframework.org/schema/beans             https://www.springframework.org/schema/beans/spring-beans.xsd             http://camel.apache.org/schema/cxf       http://camel.apache.org/schema/cxf/camel-cxf.xsd             http://camel.apache.org/schema/spring             https://camel.apache.org/schema/spring/camel-spring.xsd">
+    <import resource="jetty-engine.xml"/>
+    <bean class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider" id="jsonProvider"/>
+    <bean id="dropAllMessageHeadersStrategy" class="org.apache.camel.component.cxf.common.header.CxfHeaderFilterStrategy">
+    	<property name="relayHeaders" value="false"/>
+	</bean>
+    <cxf:rsServer address="http://localhost:8284/users"
+        depends-on="kc-cxf-endpoint" id="restUsersApiServer"
+        loggingFeatureEnabled="true" serviceClass="io.endpoints.server.users.api.UsersApi">
+        <cxf:providers>
+            <ref bean="jsonProvider"/>
+        </cxf:providers>
+    </cxf:rsServer>
+    <cxf:rsClient address="http://localhost:8282/user-services"
+        id="restUsersApiClient" loggingFeatureEnabled="true" serviceClass="io.endpoints.client.users.api.UsersApi">
+        <cxf:providers>
+            <ref bean="jsonProvider"/>
+        </cxf:providers>
+    </cxf:rsClient>
+    <cxf:rsClient address="http://localhost:8283/account-services"
+        id="restAccountsApiClient" loggingFeatureEnabled="true" serviceClass="io.endpoints.client.accounts.api.AccountsApi">
+        <cxf:providers>
+            <ref bean="jsonProvider"/>
+        </cxf:providers>
+    </cxf:rsClient>
+    <bean
+        class="org.mycompany.processor.CxfRsClientConfigRetrieveUserDetails" id="cxfRsClientConfigRetrieveUserDetails"/>
+    <bean
+        class="org.mycompany.processor.CxfRsClientConfigRetrieveAccounts" id="cxfRsClientConfigRetrieveAccounts"/>
+    <bean
+        class="org.mycompany.processor.aggregator.UserAccountsAggregationStrategy" id="userAccountsAggregationStrategy"/>
+    <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+        <endpoint id="transformAccountsToUserAccounts" uri="dozer:transformAccountsToUserAccounts?sourceModel=org.mycompany.model.AccountsEncapsulation&amp;targetModel=io.endpoints.server.users.model.UserAccounts&amp;mappingFile=mapping/accounts.xml"/>
+        <endpoint id="transformUserToUserAccounts" uri="dozer:transformUserToUserAccounts?sourceModel=io.endpoints.client.users.model.User&amp;targetModel=io.endpoints.server.users.model.UserAccounts&amp;mappingFile=mapping/user.xml"/>
+        <route id="_routeRestUsersApi">
+            <from id="_fromRestUsersApi" uri="cxfrs:bean:restUsersApiServer?bindingStyle=SimpleConsumer"/>
+            <log id="_logRestUsersApi" message="Called method: ${header.operationName}, userId: ${in.header.userId}"/>
+            <toD id="_toRestUsersApi" uri="direct:${header.operationName}"/>
+        </route>
+        <route id="_routeRetrieveUserDetails">
+            <from id="_fromRetrieveUserDetails" uri="direct:retrieveUserDetails"/>
+            <log id="_log1RetrieveUserDetails" message="Called method: ${header.operationName}"/>
+            <doTry id="_doTry1RetrieveUserDetails">
+                <process id="_process1RetrieveUserDetails" ref="cxfRsClientConfigRetrieveUserDetails"/>
+                <log id="_log1RetrieveUserDetails" message="Called method: ${header.operationName}"/>
+                <to id="_toRetrieveUserDetails" uri="cxfrs:bean:restUsersApiClient?headerFilterStrategy=#dropAllMessageHeadersStrategy"/>
+                <doCatch id="_doCatch1RetrieveUserDetails">
+                    <exception>org.apache.camel.component.cxf.CxfOperationException</exception>
+                    <exception>javax.ws.rs.NotFoundException</exception>
+                    <setHeader headerName="Exchange.HTTP_RESPONSE_CODE" id="_setHeader1RetrieveUserDetails">
+                        <constant>404</constant>
+                    </setHeader>
+                    <setBody id="_setBody1RetrieveUserDetails">
+                        <constant>{ "code": 404, "message": "Not found" }</constant>
+                    </setBody>
+                </doCatch>
+            </doTry>
+            <log id="_log2RetrieveUserDetails" message=">>> ${body}"/>
+        </route>
+        <route id="_routeRetrieveUserAccounts">
+            <from id="_fromRetrieveUserAccounts" uri="direct:retrieveUserAccounts"/>
+            <log id="_log1RetrieveUserAccounts" message="Called method: ${header.operationName} Body: ${body}"/>
+            <to id="_to1RetrieveUserAccounts" uri="direct:retrieveUserDetails"/>
+            <log id="_log2RetrieveUserAccounts" message=">>> ${body}"/>
+            <to id="_to2" uri="ref:transformUserToUserAccounts"/>
+            <log id="_log2RetrieveUserAccounts" message=">>> ${body}"/>
+            <enrich id="_enrich1" strategyRef="userAccountsAggregationStrategy">
+                <constant>direct:retrieveAccounts</constant>
+            </enrich>
+        </route>
+        <route id="_routeRetrieveAccounts">
+            <from id="_fromRetrieveAccounts" uri="direct:retrieveAccounts"/>
+            <log id="_log1RetrieveAccounts" message="Called method: ${header.operationName} Body: ${body}"/>
+            <doTry id="_doTry1RetrieveAccounts">
+                <process id="_process1RetrieveAccounts" ref="cxfRsClientConfigRetrieveAccounts"/>
+                <log id="_log2RetrieveAccounts" message="Called method: ${header.operationName}"/>
+                <to id="_to1RetrieveAccounts" uri="cxfrs:bean:restAccountsApiClient?headerFilterStrategy=#dropAllMessageHeadersStrategy"/>
+                <doCatch id="_doCatch1RetrieveAccounts">
+                    <exception>org.apache.camel.component.cxf.CxfOperationException</exception>
+                    <exception>javax.ws.rs.NotFoundException</exception>
+                    <setHeader headerName="Exchange.HTTP_RESPONSE_CODE" id="_setHeader1Accounts">
+                        <constant>404</constant>
+                    </setHeader>
+                    <setBody id="_setBody1Accounts">
+                        <constant>{ "code": 404, "message": "Not found" }</constant>
+                    </setBody>
+                </doCatch>
+            </doTry>
+            <log id="_log3RetrieveAccounts" message=">>> ${body}"/>
+            <setBody id="_setBody1RetrieveAccounts">
+                <groovy>request.body = new org.mycompany.model.AccountsEncapsulation(request.body); return request.body;</groovy>
+            </setBody>
+            <to id="_to1" uri="ref:transformAccountsToUserAccounts"/>
+            <log id="_log4RetrieveAccounts" message=">>> ${body}"/>
+        </route>
+    </camelContext>
+</beans>

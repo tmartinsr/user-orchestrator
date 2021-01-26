@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:httpj="http://cxf.apache.org/transports/http-jetty/configuration"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://cxf.apache.org/transports/http-jetty/configuration
+        http://cxf.apache.org/schemas/configuration/http-jetty.xsd">
+
+	<import resource="classpath:META-INF/cxf/cxf.xml" />
+
+	<bean id="kcPolicyEnforcerConfig" class="org.keycloak.representations.adapters.config.PolicyEnforcerConfig">
+		<property name="enforcementMode" value="ENFORCING"/>
+		<property name="lazyLoadPaths" value="false"/>
+		<property name="httpMethodAsScope" value="false"/>
+	</bean>
+
+	<bean id="kcAdapterConfig"
+		class="org.keycloak.representations.adapters.config.AdapterConfig">
+		<property name="realm" value="api-realm" />
+		<property name="authServerUrl" value="http://localhost:8080/auth" />
+		<property name="sslRequired" value="none" />
+		<property name="resource" value="psd2-accounts" />
+		<property name="verifyTokenAudience" value="false"/>	<!-- verifying that intended audience matches with resource -->
+		<property name="useResourceRoleMappings" value="false"/> <!-- verifying roles at resources level and not default realm level -->
+		<property name="credentials">
+        <map>
+            <entry key="secret" value="b67c4566-b03a-4506-9694-a999f98ddb0a"/>
+        </map>
+    	</property>
+		<property name="bearerOnly" value="true" />
+		<property name="policyEnforcerConfig">
+			<ref bean="kcPolicyEnforcerConfig"/>
+		</property>
+	</bean>
+	
+	<bean id="keycloakAuthenticator"
+		class="org.keycloak.adapters.jetty.KeycloakJettyAuthenticator">
+		<property name="adapterConfig">
+			<ref bean="kcAdapterConfig" />
+		</property>
+	</bean>
+
+	<bean id="constraint"
+		class="org.eclipse.jetty.util.security.Constraint">
+		<property name="name" value="psd2-accounts" />
+		<property name="roles">
+			<list>
+				<value>**</value>
+			</list>
+		</property>
+		<property name="authenticate" value="true" />
+		<property name="dataConstraint" value="0" />
+	</bean>
+
+	<bean id="constraintMapping"
+		class="org.eclipse.jetty.security.ConstraintMapping">
+		<property name="constraint" ref="constraint" />
+		<property name="pathSpec" value="/*" />
+	</bean>
+
+	<bean id="securityHandler"
+		class="org.eclipse.jetty.security.ConstraintSecurityHandler">
+		<property name="authenticator" ref="keycloakAuthenticator" />
+		<property name="constraintMappings">
+			<list>
+				<ref bean="constraintMapping" />
+			</list>
+		</property>
+		<property name="authMethod" value="BASIC" />
+		<property name="realmName" value="does-not-matter" />
+	</bean>
+
+	<httpj:engine-factory bus="cxf"
+		id="kc-cxf-endpoint">
+		<httpj:engine port="${cxf.httpj.engine.port}">
+<!-- 			<httpj:handlers> -->
+<!-- 				<ref bean="securityHandler" /> -->
+<!-- 			</httpj:handlers> -->
+			<httpj:sessionSupport>true</httpj:sessionSupport>
+		</httpj:engine>
+	</httpj:engine-factory>
+
+</beans>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<mappings xmlns="http://dozermapper.github.io/schema/bean-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://dozermapper.github.io/schema/bean-mapping https://dozermapper.github.io/schema/bean-mapping.xsd">
+    <configuration>
+        <wildcard>false</wildcard>
+    </configuration>
+    <mapping>
+        <class-a>io.endpoints.client.users.model.User</class-a>
+        <class-b>io.endpoints.server.users.model.UserAccounts</class-b>
+        <field>
+            <a>firstName</a>
+            <b>user.firstName</b>
+        </field>
+        <field>
+            <a>lastName</a>
+            <b>user.lastName</b>
+        </field>
+        <field>
+            <a>address</a>
+            <b>user.address</b>
+        </field>
+        <field>
+            <a>gender</a>
+            <b>user.gender</b>
+        </field>
+        <field>
+            <a>phone</a>
+            <b>user.phone</b>
+        </field>
+        <field>
+            <a>countryCode</a>
+            <b>user.countryCode</b>
+        </field>
+        <field>
+            <a>postalCode</a>
+            <b>user.postalCode</b>
+        </field>
+        <field>
+            <a>userId</a>
+            <b>user.userId</b>
+        </field>
+        <field>
+            <a>email</a>
+            <b>user.email</b>
+        </field>
+    </mapping>
+</mappings>

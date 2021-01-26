@@ -1,0 +1,108 @@
+openapi: "3.0.3"
+info:
+  version: 1.0.0
+  title: Users Api
+  license:
+    name: MIT
+servers:
+  - url: http://localhost/v1
+paths:
+  /accounts/{accountId}:
+    get:
+      summary: Get account details
+      operationId: retrieveAccountDetails
+      tags:
+        - accounts
+      parameters:
+        - name: accountId
+          in: path
+          description: requested account id
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: query
+          description: requested accounts by user id
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns account details
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/Account"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /accounts:
+    get:
+      summary: Get accounts
+      operationId: retrieveAccounts
+      tags:
+        - accounts
+      parameters:
+        - name: userId
+          in: query
+          description: filter accounts for given user id
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns accounts
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/AccountList"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Account:
+      type: object
+      required:
+        - account_id
+        - user_id
+        - IBAN
+        - balance
+        - currency
+        - date_of_balence
+      properties:
+        account_id:
+          type: integer
+          format: int32
+        user_id:
+          type: integer
+          format: int32
+        IBAN:
+          type: string
+        balance:
+          type: number
+        currency:
+          type: string
+        date_of_balence:
+          type: string
+    AccountList:
+          type: array
+          items:
+            $ref: "#/components/schemas/Account"  
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

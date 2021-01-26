@@ -1,0 +1,81 @@
+openapi: "3.0.3"
+info:
+  version: 1.0.0
+  title: Users Api
+  license:
+    name: MIT
+servers:
+  - url: http://localhost/v1
+paths:
+  /users/{userId}:
+    get:
+      summary: Get user details
+      operationId: retrieveUserDetails
+      tags:
+        - users
+      parameters:
+        - name: userId
+          in: path
+          description: requested user id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns user details
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/User"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - user_id
+        - first_name
+        - last_name
+        - email
+        - gender
+        - address
+        - postal_code
+        - country_code
+      properties:
+        user_id:
+          type: integer
+          format: int32
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        gender:
+          type: string
+        address:
+          type: string
+        postal_code:
+          type: integer
+          format: int32
+        country_code:
+          type: string
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

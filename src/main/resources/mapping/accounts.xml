@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<mappings xmlns="http://dozermapper.github.io/schema/bean-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://dozermapper.github.io/schema/bean-mapping https://dozermapper.github.io/schema/bean-mapping.xsd">
+    <configuration>
+        <wildcard>false</wildcard>
+    </configuration>
+    <mapping>
+        <class-a>org.mycompany.model.AccountsEncapsulation</class-a>
+        <class-b>io.endpoints.server.users.model.UserAccounts</class-b>
+        <field>
+            <a>accounts</a>
+            <b>accounts</b>
+        </field>
+    </mapping>
+    <mapping>
+        <class-a>io.endpoints.client.accounts.model.Account</class-a>
+        <class-b>io.endpoints.server.users.model.Account</class-b>
+        <field>
+            <a>accountId</a>
+            <b>accountId</b>
+        </field>
+        <field>
+            <a>dateOfBalence</a>
+            <b>dateOfBalence</b>
+        </field>
+        <field>
+            <a>IBAN</a>
+            <b>IBAN</b>
+        </field>
+        <field>
+            <a>balance</a>
+            <b>balance</b>
+        </field>
+        <field>
+            <a>currency</a>
+            <b>currency</b>
+        </field>
+    </mapping>
+</mappings>
